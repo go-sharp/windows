@@ -9,6 +9,40 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// FindParentProcesses takes a process id and searches for parent processes.
+// If recursive is true, FindParentProcesses will walk up the whole process tree
+// and return all parent process ids.
+func FindParentProcesses(pid uint32, recursive bool) (pids []uint32, err error) {
+	procs, err := getAllProcesses()
+	if err != nil {
+		return pids, err
+	}
+
+	var parentPid = pid
+	for {
+		hasMore := false
+	loop:
+		for i := range procs {
+			if procs[i].ProcessID == parentPid {
+				parentPid = procs[i].ParentProcessID
+
+				if parentPid > 0 {
+					pids = append(pids, parentPid)
+					if recursive {
+						hasMore = true
+					}
+				}
+				break loop
+			}
+		}
+
+		if !hasMore {
+			break
+		}
+	}
+	return pids, nil
+}
+
 // FindChildProcesses takes a process id and searches for child processes.
 // If recursive is true, FindChildProcess will walk down the whole process tree
 // and return pids of all children whether they are direct children or grandchildren.
