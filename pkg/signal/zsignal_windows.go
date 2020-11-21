@@ -43,6 +43,7 @@ var (
 
 	procAttachConsole            = modkernel32.NewProc("AttachConsole")
 	procFreeConsole              = modkernel32.NewProc("FreeConsole")
+	procSetConsoleCtrlHandler    = modkernel32.NewProc("SetConsoleCtrlHandler")
 	procEnumChildWindows         = moduser32.NewProc("EnumChildWindows")
 	procEnumWindows              = moduser32.NewProc("EnumWindows")
 	procGetWindowThreadProcessId = moduser32.NewProc("GetWindowThreadProcessId")
@@ -59,6 +60,18 @@ func attachConsole(dwProcessId DWORD) (err error) {
 
 func freeConsole() (err error) {
 	r1, _, e1 := syscall.Syscall(procFreeConsole.Addr(), 0, 0, 0, 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func setConsoleCtrlHandler(handler uintptr, add bool) (err error) {
+	var _p0 uint32
+	if add {
+		_p0 = 1
+	}
+	r1, _, e1 := syscall.Syscall(procSetConsoleCtrlHandler.Addr(), 2, uintptr(handler), uintptr(_p0), 0)
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}

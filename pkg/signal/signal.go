@@ -15,6 +15,7 @@ import (
 //sys getWindowThreadProcessId(hwnd HWND, lpdwProcessId LPDWORD) (id DWORD) = user32.GetWindowThreadProcessId
 //sys attachConsole(dwProcessId DWORD) (err error) = kernel32.AttachConsole
 //sys freeConsole() (err error) = kernel32.FreeConsole
+//sys setConsoleCtrlHandler(handler uintptr, add bool) (err error) = kernel32.SetConsoleCtrlHandler
 
 // Windows types
 type (
@@ -72,16 +73,19 @@ const (
 
 // SendCtrlEvent sends a windows control event. Caveat: If the
 // the process that calls this functions has already a console attached,
-// this call will fail.
+// this call will fail. This call will also call SetConsoleCtrlHandler(0, true)
+// to prevent ourself from receiving the event.
 func SendCtrlEvent(pid uint32, ctrlEvent CtrlEvent) error {
 	if err := attachConsole(DWORD(pid)); err != nil {
 		return fmt.Errorf("failed to attach console: %w", err)
 	}
 	defer freeConsole()
 
+	setConsoleCtrlHandler(0, true)
 	if err := windows.GenerateConsoleCtrlEvent(uint32(ctrlEvent), 0); err != nil {
 		return fmt.Errorf("failed to send event: %w", err)
 	}
+
 	return nil
 }
 
